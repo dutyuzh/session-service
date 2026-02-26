@@ -828,7 +828,7 @@ graph TB
         <h3>Prerequisites</h3>
         <ul style="margin-left: 30px; line-height: 2">
           <li>Node.js 18+</li>
-          <li>Redis 6+</li>
+          <li><strong>Redis 6+</strong> (required - must be running locally)</li>
           <li>pnpm 8+</li>
         </ul>
 
@@ -840,10 +840,16 @@ cd session-service
 # 2. Install dependencies
 pnpm install
 
-# 3. Start Redis (if not running)
-docker run -d -p 6379:6379 redis:7-alpine
-# OR
+# 3. Start Redis server (REQUIRED)
+# Option A: Local Redis installation
 redis-server
+
+# Option B: macOS with Homebrew
+brew install redis
+brew services start redis
+
+# Verify Redis is running:
+redis-cli ping  # Should return "PONG"
 
 # 4. Configure environment
 cp .env.example .env
