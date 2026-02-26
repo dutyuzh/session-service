@@ -10,10 +10,22 @@
     <div class="container">
       <h1>🔐 Session Service API Tester</h1>
       <p class="subtitle">
-        Local demo with Redis • Interactive testing interface for on-prem session management
+        Local demo with Redis • Interactive testing interface for on-prem
+        session management
       </p>
-      <div style="text-align: center; margin-bottom: 15px; padding: 8px 16px; background: rgba(251, 191, 36, 0.15); border-radius: 6px; border: 1px solid rgba(251, 191, 36, 0.3);">
-        <span style="font-size: 13px; color: #fbbf24;">⚠️ Requires local Redis server</span>
+      <div
+        style="
+          text-align: center;
+          margin-bottom: 15px;
+          padding: 8px 16px;
+          background: rgba(251, 191, 36, 0.15);
+          border-radius: 6px;
+          border: 1px solid rgba(251, 191, 36, 0.3);
+        "
+      >
+        <span style="font-size: 13px; color: #fbbf24"
+          >⚠️ Requires local Redis server</span
+        >
       </div>
       <div style="text-align: center; margin-bottom: 20px">
         <a
@@ -576,6 +588,19 @@
             return;
           }
 
+          // Capture old session ID before rotation
+          const sessionInfoEl = document.getElementById("sessionInfo");
+          const sessionIdEl = document.getElementById("sessionId");
+          const oldSessionId = sessionIdEl.textContent;
+
+          // Show rotating indicator
+          if (
+            sessionInfoEl.style.display !== "none" &&
+            oldSessionId !== "None"
+          ) {
+            sessionIdEl.innerHTML = `<span style="opacity: 0.6;">${oldSessionId}</span> <span style="color: #f59e0b;">→ rotating...</span>`;
+          }
+
           const response = await fetch(
             `${API_BASE}/sessions/me/attach-identity`,
             {
@@ -591,8 +616,35 @@
           const data = await response.json();
           displayResponse(response.status, data, !response.ok);
 
-          // Reset timer on successful identity attach (sliding window!)
-          if (response.ok) {
+          // Update session ID display with new ID after rotation
+          if (response.ok && data.session && data.session.sessionId) {
+            sessionInfoEl.style.display = "block";
+
+            // Show old → new transition
+            if (data.security && data.security.oldSessionId) {
+              sessionIdEl.innerHTML = `
+                <div style="line-height: 1.6;">
+                  <div style="text-decoration: line-through; opacity: 0.5; font-size: 12px;">
+                    Old: ${data.security.oldSessionId}
+                  </div>
+                  <div style="color: #10b981; font-weight: 600;">
+                    New: ${data.session.sessionId}
+                  </div>
+                  <div style="font-size: 11px; color: #666; margin-top: 4px;">
+                    🔒 Session rotated for security
+                  </div>
+                </div>
+              `;
+
+              // After 5 seconds, show just the new session ID
+              setTimeout(() => {
+                sessionIdEl.textContent = data.session.sessionId;
+              }, 7500);
+            } else {
+              sessionIdEl.textContent = data.session.sessionId;
+            }
+
+            // Reset timer on successful identity attach (sliding window!)
             startTimer();
             // Clear input for next use
             document.getElementById("userId").value = "";
