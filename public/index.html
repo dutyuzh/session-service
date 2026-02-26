@@ -1,0 +1,978 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Session Service - API Tester</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="container">
+      <h1>🔐 Session Service API Tester</h1>
+      <p class="subtitle">
+        Interactive testing interface for on-prem session management
+      </p>
+      <div style="text-align: center; margin-bottom: 20px">
+        <a
+          href="/docs.html"
+          style="
+            color: white;
+            background: rgba(255, 255, 255, 0.2);
+            padding: 10px 20px;
+            border-radius: 8px;
+            text-decoration: none;
+            display: inline-block;
+            font-weight: 500;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            transition: all 0.3s;
+          "
+          onmouseover="this.style.background = 'rgba(255,255,255,0.3)'"
+          onmouseout="this.style.background = 'rgba(255,255,255,0.2)'"
+          >📚 View Architecture Documentation</a
+        >
+      </div>
+
+      <!-- Main Layout: Cards on left, Response on right -->
+      <div class="main-layout">
+        <!-- Cards Container -->
+        <div class="cards-container">
+          <!-- Step 1: Create Session -->
+          <div class="card">
+            <h2>Step 1: Create Session</h2>
+            <div class="endpoint post">POST /sessions</div>
+            <p>Create a new anonymous session and receive a session cookie.</p>
+            <button onclick="createSession()">Create Session</button>
+          </div>
+
+          <!-- Step 2: Fetch Session -->
+          <div class="card">
+            <h2>Step 2: Fetch Session</h2>
+            <div class="endpoint get">GET /sessions/me</div>
+            <p>Retrieve your current session data using the session cookie.</p>
+            <button onclick="fetchSession()">Get My Session</button>
+          </div>
+
+          <!-- Step 3: Update Activity -->
+          <div class="card">
+            <h2>Step 3: Update Activity</h2>
+            <div class="endpoint post">POST /sessions/me/activity</div>
+            <p>
+              Ping activity to refresh the sliding 30-minute expiration window.
+            </p>
+            <button onclick="updateActivity()">Ping Activity</button>
+          </div>
+
+          <!-- Step 4: Update Attributes -->
+          <div class="card">
+            <h2>Step 4: Update Attributes</h2>
+            <div class="endpoint post">PATCH /sessions/me</div>
+            <p>Attach custom metadata like campaignId, referralSource, etc.</p>
+            <input
+              type="text"
+              id="attributeKey"
+              placeholder="Key (e.g., campaignId)"
+              style="
+                width: 100%;
+                padding: 8px;
+                margin-bottom: 8px;
+                border: 1px solid #ddd;
+                border-radius: 4px;
+              "
+            />
+            <input
+              type="text"
+              id="attributeValue"
+              placeholder="Value (e.g., summer-2026)"
+              style="
+                width: 100%;
+                padding: 8px;
+                margin-bottom: 12px;
+                border: 1px solid #ddd;
+                border-radius: 4px;
+              "
+            />
+            <button onclick="updateAttributes()">Update Attributes</button>
+          </div>
+
+          <!-- Step 5: Device Identity -->
+          <div class="card">
+            <h2>Step 5: Device Identity</h2>
+            <div class="endpoint get">GET /sessions/me</div>
+            <p>
+              Check your device ID (did cookie). Device persists 90 days across
+              browser sessions.
+            </p>
+            <button onclick="checkDeviceIdentity()">Check Device ID</button>
+            <div
+              id="deviceInfo"
+              style="
+                margin-top: 12px;
+                padding: 10px;
+                background: #f0f9ff;
+                border-radius: 4px;
+                font-size: 14px;
+                display: none;
+              "
+            >
+              <strong>Device ID:</strong> <span id="deviceId">Loading...</span
+              ><br />
+              <strong>Expires:</strong> 90 days from last activity
+            </div>
+          </div>
+
+          <!-- Step 6: Attach Identity -->
+          <div class="card">
+            <h2>Step 6: Attach Identity</h2>
+            <div class="endpoint post">POST /sessions/me/attach-identity</div>
+            <p>
+              Transition from anonymous to authenticated. Links userId to
+              session and device.
+            </p>
+            <input
+              type="text"
+              id="userId"
+              placeholder="User ID (e.g., user_12345)"
+              style="
+                width: 100%;
+                padding: 8px;
+                margin-bottom: 12px;
+                border: 1px solid #ddd;
+                border-radius: 4px;
+              "
+            />
+            <button onclick="attachIdentity()">Login / Attach Identity</button>
+          </div>
+
+          <!-- Step 7: Restore Session -->
+          <div class="card">
+            <h2>Step 7: Restore Session</h2>
+            <div class="endpoint get">GET /sessions/me</div>
+            <p>
+              Test persistent login: Delete session cookie and fetch session. If
+              device has userId, new session auto-restores!
+            </p>
+            <div
+              style="
+                background: #fef3c7;
+                padding: 10px;
+                border-radius: 4px;
+                font-size: 13px;
+                margin-bottom: 12px;
+                border-left: 3px solid #f59e0b;
+              "
+            >
+              <strong>⚠️ Prerequisites:</strong> You must first complete
+              <strong>Step 6</strong> (Login / Attach Identity) to give your
+              device a userId. Anonymous sessions cannot be restored.
+            </div>
+            <button onclick="testRestoration()">
+              Simulate Session Expiry & Restore
+            </button>
+            <div
+              id="restorationInfo"
+              style="
+                margin-top: 12px;
+                padding: 10px;
+                background: #fff4e6;
+                border-radius: 4px;
+                font-size: 14px;
+                display: none;
+              "
+            >
+              <strong>Status:</strong> <span id="restorationStatus">...</span>
+            </div>
+          </div>
+
+          <!-- Step 8: Multi-Device Behavior -->
+          <div class="card">
+            <h2>Step 8: List Devices</h2>
+            <div class="endpoint get">GET /users/me/devices</div>
+            <p>
+              View all devices linked to your user. Test multi-device: Login
+              from different browsers!
+            </p>
+            <button onclick="listUserDevices()">Show My Devices</button>
+            <div
+              id="devicesInfo"
+              style="
+                margin-top: 12px;
+                padding: 10px;
+                background: #f0f9ff;
+                border-radius: 4px;
+                font-size: 14px;
+                display: none;
+              "
+            >
+              <div id="devicesList"></div>
+            </div>
+          </div>
+
+          <!-- Step 9: Session Merge -->
+          <div class="card">
+            <h2>Step 9: Merge Sessions</h2>
+            <div class="endpoint post">POST /sessions/merge</div>
+            <p>
+              Merge two sessions into one. Attributes merged, target wins on
+              collisions. Lineage preserved!
+            </p>
+            <input
+              type="text"
+              id="sourceSessionId"
+              placeholder="Source Session ID"
+              style="width: 100%; margin-bottom: 8px; padding: 8px"
+            />
+            <input
+              type="text"
+              id="targetSessionId"
+              placeholder="Target Session ID"
+              style="width: 100%; margin-bottom: 8px; padding: 8px"
+            />
+            <button onclick="mergeSessions()">Merge Sessions</button>
+            <div
+              id="mergeInfo"
+              style="
+                margin-top: 12px;
+                padding: 10px;
+                background: #fef3c7;
+                border-radius: 4px;
+                font-size: 14px;
+                display: none;
+              "
+            >
+              <div id="mergeResult"></div>
+            </div>
+          </div>
+
+          <!-- Step 10: Session Invalidation -->
+          <div class="card">
+            <h2>Step 10: Invalidate Session</h2>
+            <div class="endpoint post">POST /sessions/me/invalidate</div>
+            <p>
+              Explicitly logout and destroy session. Cookie cleared. Security:
+              Step 6 now rotates sid on login (fixation mitigation)!
+            </p>
+            <button onclick="invalidateSession()">Logout / Invalidate</button>
+            <div
+              id="invalidateInfo"
+              style="
+                margin-top: 12px;
+                padding: 10px;
+                background: #fee2e2;
+                border-radius: 4px;
+                font-size: 14px;
+                display: none;
+              "
+            >
+              <div id="invalidateResult"></div>
+            </div>
+          </div>
+
+          <!-- Step 11: Cross-Service Continuity -->
+          <div class="card">
+            <h2>Step 11: Cross-Service Continuity</h2>
+            <div class="endpoint get">GET /internal/sessions/:sid</div>
+            <p>
+              <strong>Requirement:</strong> "Sessions must be retrievable and
+              usable across multiple services."<br />
+              Tests internal API for microservices (email, billing, analytics)
+              to access session data with shared secret authentication.
+            </p>
+            <input
+              type="text"
+              id="internalSessionId"
+              placeholder="Session ID (or leave empty for current)"
+              style="width: 100%; margin-bottom: 8px; padding: 8px"
+            />
+            <button onclick="testInternalEndpoint()">Test Internal API</button>
+            <div
+              id="internalInfo"
+              style="
+                margin-top: 12px;
+                padding: 10px;
+                background: #ede9fe;
+                border-radius: 4px;
+                font-size: 14px;
+                display: none;
+              "
+            >
+              <div id="internalResult"></div>
+            </div>
+          </div>
+
+          <!-- Health Check -->
+          <div class="card">
+            <h2>Health Check</h2>
+            <div class="endpoint get">GET /health</div>
+            <p>Check if the service and Redis connection are healthy.</p>
+            <button onclick="checkHealth()">Check Health</button>
+          </div>
+        </div>
+        <!-- End Cards Container -->
+
+        <!-- Sticky Response Panel -->
+        <div class="sticky-response">
+          <!-- Response Display -->
+          <div class="response-container">
+            <h2>📤 Response</h2>
+            <div id="statusBadge"></div>
+            <div id="response" class="response">
+              Click a button above to test an endpoint...
+            </div>
+            <div id="timestamp" class="timestamp"></div>
+          </div>
+
+          <!-- Session Info -->
+          <div id="sessionInfo" class="session-info" style="display: none">
+            <strong>Current Session ID:</strong>
+            <span id="sessionId">None</span>
+          </div>
+
+          <!-- Sliding Window Timer -->
+          <div
+            id="timerContainer"
+            class="timer-container"
+            style="display: none"
+          >
+            <h2>⏱️ Sliding Window Expiration Timer</h2>
+            <p style="color: #666; margin-bottom: 16px">
+              Session expires if inactive for 30 minutes. Ping activity to
+              reset!
+            </p>
+            <div id="timerDisplay" class="timer-display">30:00</div>
+            <div id="timerStatus" class="timer-status">No active session</div>
+          </div>
+        </div>
+        <!-- End Sticky Response Panel -->
+      </div>
+      <!-- End Main Layout -->
+    </div>
+    <!-- End Container -->
+
+    <script>
+      const API_BASE = ""; // Relative URLs work behind any proxy
+      const SESSION_TTL = 30 * 60; // 30 minutes in seconds
+      let sessionTimer = null;
+      let timeRemaining = SESSION_TTL;
+
+      function startTimer() {
+        // Clear any existing timer
+        if (sessionTimer) clearInterval(sessionTimer);
+
+        // Reset time to 30 minutes
+        timeRemaining = SESSION_TTL;
+
+        // Show timer container
+        document.getElementById("timerContainer").style.display = "block";
+
+        // Update display immediately
+        updateTimerDisplay();
+
+        // Start countdown
+        sessionTimer = setInterval(() => {
+          timeRemaining--;
+          updateTimerDisplay();
+
+          if (timeRemaining <= 0) {
+            clearInterval(sessionTimer);
+            sessionTimer = null;
+          }
+        }, 1000);
+      }
+
+      function updateTimerDisplay() {
+        const minutes = Math.floor(timeRemaining / 60);
+        const seconds = timeRemaining % 60;
+        const display = `${minutes}:${seconds.toString().padStart(2, "0")}`;
+
+        const timerDisplay = document.getElementById("timerDisplay");
+        const timerStatus = document.getElementById("timerStatus");
+
+        timerDisplay.textContent = display;
+
+        // Update styling based on time remaining
+        timerDisplay.className = "timer-display";
+        timerStatus.className = "timer-status";
+
+        if (timeRemaining <= 0) {
+          timerDisplay.className = "timer-display expired";
+          timerStatus.className = "timer-status expired";
+          timerStatus.textContent = "❌ Session expired! Create a new session.";
+        } else if (timeRemaining <= 300) {
+          // Last 5 minutes
+          timerDisplay.className = "timer-display warning";
+          timerStatus.className = "timer-status warning";
+          timerStatus.textContent =
+            "⚠️ Session expiring soon! Ping activity to extend.";
+        } else {
+          timerStatus.className = "timer-status active";
+          timerStatus.textContent =
+            "✅ Session active - expires " +
+            minutes +
+            " minutes after last activity";
+        }
+      }
+
+      function displayResponse(status, data, isError = false) {
+        const responseEl = document.getElementById("response");
+        const statusBadge = document.getElementById("statusBadge");
+        const timestamp = document.getElementById("timestamp");
+
+        responseEl.textContent = JSON.stringify(data, null, 2);
+        responseEl.className = `response ${isError ? "error" : "success"}`;
+
+        statusBadge.innerHTML = `<span class="status-badge ${isError ? "error" : "success"}">HTTP ${status}</span>`;
+        timestamp.textContent = `Requested at ${new Date().toLocaleString()}`;
+      }
+
+      async function createSession() {
+        try {
+          const response = await fetch(`${API_BASE}/sessions`, {
+            method: "POST",
+            credentials: "include", // Important for cookies!
+          });
+
+          const data = await response.json();
+          displayResponse(response.status, data, !response.ok);
+
+          if (response.ok && data.sessionId) {
+            document.getElementById("sessionInfo").style.display = "block";
+            document.getElementById("sessionId").textContent = data.sessionId;
+            // Start the countdown timer
+            startTimer();
+          }
+        } catch (error) {
+          displayResponse(0, { error: error.message }, true);
+        }
+      }
+
+      async function fetchSession() {
+        try {
+          const response = await fetch(`${API_BASE}/sessions/me`, {
+            method: "GET",
+            credentials: "include",
+          });
+
+          const data = await response.json();
+          displayResponse(response.status, data, !response.ok);
+        } catch (error) {
+          displayResponse(0, { error: error.message }, true);
+        }
+      }
+
+      async function updateActivity() {
+        try {
+          const response = await fetch(`${API_BASE}/sessions/me/activity`, {
+            method: "POST",
+            credentials: "include",
+          });
+
+          const data = await response.json();
+          displayResponse(response.status, data, !response.ok);
+
+          // Reset the timer on successful activity ping (sliding window!)
+          if (response.ok) {
+            startTimer();
+          }
+        } catch (error) {
+          displayResponse(0, { error: error.message }, true);
+        }
+      }
+
+      async function updateAttributes() {
+        try {
+          // Get values from input fields
+          const key = document.getElementById("attributeKey").value.trim();
+          const value = document.getElementById("attributeValue").value.trim();
+
+          if (!key || !value) {
+            displayResponse(
+              400,
+              {
+                error: "Both key and value are required",
+              },
+              true,
+            );
+            return;
+          }
+
+          // Build attributes object
+          const attributes = {
+            [key]: value,
+          };
+
+          const response = await fetch(`${API_BASE}/sessions/me`, {
+            method: "PATCH",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            credentials: "include",
+            body: JSON.stringify({ attributes }),
+          });
+
+          const data = await response.json();
+          displayResponse(response.status, data, !response.ok);
+
+          // Reset timer on successful update (sliding window!)
+          if (response.ok) {
+            startTimer();
+            // Clear inputs for next use
+            document.getElementById("attributeKey").value = "";
+            document.getElementById("attributeValue").value = "";
+          }
+        } catch (error) {
+          displayResponse(0, { error: error.message }, true);
+        }
+      }
+
+      async function checkHealth() {
+        try {
+          const response = await fetch(`${API_BASE}/health`, {
+            method: "GET",
+          });
+
+          const data = await response.json();
+          displayResponse(response.status, data, !response.ok);
+        } catch (error) {
+          displayResponse(0, { error: error.message }, true);
+        }
+      }
+
+      async function checkDeviceIdentity() {
+        try {
+          const response = await fetch(`${API_BASE}/sessions/me`, {
+            method: "GET",
+            credentials: "include",
+          });
+
+          const data = await response.json();
+          displayResponse(response.status, data, !response.ok);
+
+          if (response.ok && data.session && data.session.deviceId) {
+            document.getElementById("deviceInfo").style.display = "block";
+            document.getElementById("deviceId").textContent =
+              data.session.deviceId;
+          }
+        } catch (error) {
+          displayResponse(0, { error: error.message }, true);
+        }
+      }
+
+      async function attachIdentity() {
+        try {
+          const userId = document.getElementById("userId").value.trim();
+
+          if (!userId) {
+            displayResponse(
+              400,
+              {
+                error: "User ID is required",
+              },
+              true,
+            );
+            return;
+          }
+
+          const response = await fetch(
+            `${API_BASE}/sessions/me/attach-identity`,
+            {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              credentials: "include",
+              body: JSON.stringify({ userId }),
+            },
+          );
+
+          const data = await response.json();
+          displayResponse(response.status, data, !response.ok);
+
+          // Reset timer on successful identity attach (sliding window!)
+          if (response.ok) {
+            startTimer();
+            // Clear input for next use
+            document.getElementById("userId").value = "";
+          }
+        } catch (error) {
+          displayResponse(0, { error: error.message }, true);
+        }
+      }
+
+      async function testRestoration() {
+        try {
+          const restorationInfo = document.getElementById("restorationInfo");
+          const restorationStatus =
+            document.getElementById("restorationStatus");
+
+          restorationInfo.style.display = "block";
+          restorationStatus.textContent = "Deleting session from Redis...";
+
+          // Step 1: Delete session from Redis (simulate expiration)
+          const deleteResponse = await fetch(`${API_BASE}/sessions/me`, {
+            method: "DELETE",
+            credentials: "include",
+          });
+
+          if (!deleteResponse.ok) {
+            const deleteData = await deleteResponse.json();
+            restorationStatus.innerHTML =
+              "❌ Failed to delete session: " + deleteData.error;
+            restorationInfo.style.background = "#fee2e2";
+            return;
+          }
+
+          // Step 2: Clear session cookie from browser (server-side)
+          // Note: httpOnly cookies cannot be deleted via document.cookie
+          // Must use server endpoint to clear cookie properly
+          restorationStatus.textContent =
+            "Session deleted from Redis. Clearing cookie...";
+
+          const clearCookieResponse = await fetch(
+            `${API_BASE}/debug/clear-session-cookie`,
+            {
+              method: "POST",
+              credentials: "include",
+            },
+          );
+
+          if (!clearCookieResponse.ok) {
+            restorationStatus.innerHTML =
+              "⚠️ Failed to clear cookie (continuing anyway)";
+          }
+
+          // Wait a moment
+          await new Promise((resolve) => setTimeout(resolve, 500));
+
+          restorationStatus.textContent =
+            "Session deleted. Attempting to fetch session...";
+
+          // Step 3: Try to fetch session - should auto-restore from device
+          const response = await fetch(`${API_BASE}/sessions/me`, {
+            method: "GET",
+            credentials: "include",
+          });
+
+          const data = await response.json();
+          displayResponse(response.status, data, !response.ok);
+
+          if (response.ok && data.restored) {
+            restorationStatus.innerHTML =
+              "✅ <strong>SUCCESS!</strong> Session auto-restored from device identity!";
+            restorationInfo.style.background = "#d1fae5";
+
+            // Restart timer for the new session
+            startTimer();
+
+            // Update session info display
+            if (data.session && data.session.sessionId) {
+              document.getElementById("sessionInfo").style.display = "block";
+              document.getElementById("sessionId").textContent =
+                data.session.sessionId + " (restored)";
+            }
+          } else if (response.ok && !data.restored) {
+            restorationStatus.innerHTML =
+              "⚠️ Unexpected: Session exists but wasn't marked as restored.";
+            restorationInfo.style.background = "#fff4e6";
+          } else {
+            restorationStatus.innerHTML =
+              "❌ Restoration failed: " +
+              (data.error || "Unknown error") +
+              "<br><small>Hint: " +
+              (data.hint || "Try attaching identity first (Step 6)") +
+              "</small>";
+            restorationInfo.style.background = "#fee2e2";
+          }
+        } catch (error) {
+          displayResponse(0, { error: error.message }, true);
+          document.getElementById("restorationStatus").innerHTML =
+            "❌ Error: " + error.message;
+          document.getElementById("restorationInfo").style.background =
+            "#fee2e2";
+        }
+      }
+
+      async function listUserDevices() {
+        try {
+          const devicesInfo = document.getElementById("devicesInfo");
+          const devicesList = document.getElementById("devicesList");
+
+          devicesInfo.style.display = "block";
+          devicesList.innerHTML = "<em>Loading devices...</em>";
+
+          const response = await fetch(`${API_BASE}/users/me/devices`, {
+            method: "GET",
+            credentials: "include",
+          });
+
+          const data = await response.json();
+          displayResponse(response.status, data, !response.ok);
+
+          if (response.ok && data.devices) {
+            if (data.devices.length === 0) {
+              devicesList.innerHTML =
+                "<em>No devices found. Attach identity first (Step 6).</em>";
+            } else {
+              let html = `<strong>User: ${data.userId}</strong><br><strong>Device Count: ${data.count}</strong><hr style="margin: 8px 0; border: none; border-top: 1px solid #ddd;">`;
+
+              data.devices
+                .sort((a, b) => new Date(b.lastSeenAt) - new Date(a.lastSeenAt))
+                .forEach((device, index) => {
+                  const lastSeen = new Date(device.lastSeenAt);
+                  const timeSince = Math.floor(
+                    (Date.now() - lastSeen) / 1000 / 60,
+                  );
+                  const timeStr =
+                    timeSince < 1
+                      ? "Just now"
+                      : timeSince < 60
+                        ? `${timeSince}m ago`
+                        : timeSince < 1440
+                          ? `${Math.floor(timeSince / 60)}h ago`
+                          : `${Math.floor(timeSince / 1440)}d ago`;
+
+                  const currentBadge = device.isCurrent
+                    ? ' <span style="background: #10b981; color: white; padding: 2px 6px; border-radius: 3px; font-size: 11px;">CURRENT</span>'
+                    : "";
+
+                  // Extract browser info from user agent
+                  const ua = device.userAgent;
+                  let browserInfo = "Unknown browser";
+                  if (ua.includes("Chrome")) browserInfo = "Chrome";
+                  else if (ua.includes("Firefox")) browserInfo = "Firefox";
+                  else if (ua.includes("Safari")) browserInfo = "Safari";
+                  else if (ua.includes("Edge")) browserInfo = "Edge";
+
+                  html += `
+                    <div style="margin: 8px 0; padding: 8px; background: ${device.isCurrent ? "#ecfdf5" : "#f9fafb"}; border-radius: 4px; border-left: 3px solid ${device.isCurrent ? "#10b981" : "#d1d5db"};">
+                      <div style="font-weight: 600;">${browserInfo}${currentBadge}</div>
+                      <div style="font-size: 12px; color: #666; margin-top: 4px;">
+                        Last seen: ${timeStr}<br>
+                        Device ID: <code style="font-size: 10px;">${device.deviceId}</code>
+                      </div>
+                    </div>
+                  `;
+                });
+
+              devicesList.innerHTML = html;
+            }
+          } else {
+            devicesList.innerHTML = `<em style="color: #dc2626;">${data.error || "Failed to load devices"}</em>`;
+          }
+        } catch (error) {
+          displayResponse(0, { error: error.message }, true);
+          document.getElementById("devicesList").innerHTML =
+            `<em style="color: #dc2626;">Error: ${error.message}</em>`;
+        }
+      }
+
+      async function mergeSessions() {
+        try {
+          // Get session IDs from input fields
+          const sourceSessionId = document
+            .getElementById("sourceSessionId")
+            .value.trim();
+          const targetSessionId = document
+            .getElementById("targetSessionId")
+            .value.trim();
+
+          if (!sourceSessionId || !targetSessionId) {
+            displayResponse(
+              400,
+              {
+                error: "Both source and target session IDs are required",
+              },
+              true,
+            );
+            return;
+          }
+
+          const mergeInfo = document.getElementById("mergeInfo");
+          const mergeResult = document.getElementById("mergeResult");
+          mergeInfo.style.display = "block";
+          mergeResult.innerHTML = "<em>Merging sessions...</em>";
+
+          const response = await fetch(`${API_BASE}/sessions/merge`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            credentials: "include",
+            body: JSON.stringify({
+              sourceSessionId,
+              targetSessionId,
+            }),
+          });
+
+          const data = await response.json();
+          displayResponse(response.status, data, !response.ok);
+
+          if (response.ok && data.mergedSession) {
+            let html = `<strong style="color: #059669;">✅ Merge Successful!</strong><hr style="margin: 8px 0; border: none; border-top: 1px solid #ddd;">`;
+            html += `<div style="margin: 8px 0;">`;
+            html += `<strong>Target Session:</strong> <code style="font-size: 11px;">${data.targetSessionId}</code><br>`;
+            html += `<strong>Source Session:</strong> <code style="font-size: 11px;">${data.sourceSessionId}</code> (invalidated)<br>`;
+            html += `</div>`;
+
+            if (data.mergedSession.userId) {
+              html += `<div style="margin: 8px 0;"><strong>User ID:</strong> ${data.mergedSession.userId}</div>`;
+            }
+
+            if (Object.keys(data.mergedSession.attributes).length > 0) {
+              html += `<div style="margin: 8px 0;"><strong>Merged Attributes:</strong><br>`;
+              html += `<pre style="font-size: 11px; background: #f9fafb; padding: 6px; border-radius: 3px; margin-top: 4px;">${JSON.stringify(data.mergedSession.attributes, null, 2)}</pre></div>`;
+            }
+
+            if (
+              data.mergedSession.lineage &&
+              data.mergedSession.lineage.length > 0
+            ) {
+              html += `<div style="margin: 8px 0;"><strong>Lineage Events:</strong> ${data.mergedSession.lineage.length}<br>`;
+              const mergeEvent = data.mergedSession.lineage.find(
+                (e) => e.type === "MERGE",
+              );
+              if (mergeEvent) {
+                html += `<div style="font-size: 12px; color: #666; margin-top: 4px;">Latest: MERGE from ${mergeEvent.from.substring(0, 8)}... to ${mergeEvent.to.substring(0, 8)}...</div>`;
+              }
+              html += `</div>`;
+            }
+
+            mergeResult.innerHTML = html;
+          } else {
+            mergeResult.innerHTML = `<em style="color: #dc2626;">${data.error || "Failed to merge sessions"}</em>`;
+          }
+        } catch (error) {
+          displayResponse(0, { error: error.message }, true);
+          document.getElementById("mergeResult").innerHTML =
+            `<em style="color: #dc2626;">Error: ${error.message}</em>`;
+        }
+      }
+
+      async function invalidateSession() {
+        try {
+          const invalidateInfo = document.getElementById("invalidateInfo");
+          const invalidateResult = document.getElementById("invalidateResult");
+          invalidateInfo.style.display = "block";
+          invalidateResult.innerHTML = "<em>Invalidating session...</em>";
+
+          const response = await fetch(`${API_BASE}/sessions/me/invalidate`, {
+            method: "POST",
+            credentials: "include",
+          });
+
+          const data = await response.json();
+          displayResponse(response.status, data, !response.ok);
+
+          if (response.ok) {
+            let html = `<strong style="color: #dc2626;">🚪 Session Invalidated!</strong><hr style="margin: 8px 0; border: none; border-top: 1px solid #ddd;">`;
+            html += `<div style="margin: 8px 0;">`;
+            html += `<strong>Session ID:</strong> <code style="font-size: 11px;">${data.sessionId}</code><br>`;
+            html += `<strong>Status:</strong> Deleted from Redis<br>`;
+            html += `<strong>Cookie:</strong> Cleared from browser<br>`;
+            html += `</div>`;
+            html += `<div style="margin-top: 8px; padding: 8px; background: #fef2f2; border-radius: 3px; font-size: 12px;">`;
+            html += `🔒 You are now logged out. Create a new session to continue.`;
+            html += `</div>`;
+
+            invalidateResult.innerHTML = html;
+
+            // Hide session info display
+            document.getElementById("sessionInfo").style.display = "none";
+            document.getElementById("timerContainer").style.display = "none";
+          } else {
+            invalidateResult.innerHTML = `<em style="color: #dc2626;">${data.error || "Failed to invalidate session"}</em>`;
+          }
+        } catch (error) {
+          displayResponse(0, { error: error.message }, true);
+          document.getElementById("invalidateResult").innerHTML =
+            `<em style="color: #dc2626;">Error: ${error.message}</em>`;
+        }
+      }
+
+      async function testInternalEndpoint() {
+        try {
+          const internalInfo = document.getElementById("internalInfo");
+          const internalResult = document.getElementById("internalResult");
+          internalInfo.style.display = "block";
+          internalResult.innerHTML =
+            "<em>Fetching session via internal API...</em>";
+
+          // Get session ID from input or use current session
+          let sessionId = document
+            .getElementById("internalSessionId")
+            .value.trim();
+
+          if (!sessionId) {
+            // Get current session ID from server (httpOnly cookies can't be read by JS)
+            internalResult.innerHTML =
+              "<em>No session ID provided. Fetching current session...</em>";
+
+            const currentSessionResponse = await fetch(
+              `${API_BASE}/sessions/me`,
+              {
+                method: "GET",
+                credentials: "include",
+              },
+            );
+
+            if (currentSessionResponse.ok) {
+              const currentSession = await currentSessionResponse.json();
+              if (currentSession.session && currentSession.session.sessionId) {
+                sessionId = currentSession.session.sessionId;
+                internalResult.innerHTML = `<em>Using current session ID: ${sessionId.substring(0, 8)}...</em>`;
+              } else {
+                internalResult.innerHTML = `<em style="color: #dc2626;">No session ID provided and no active session found</em>`;
+                return;
+              }
+            } else {
+              internalResult.innerHTML = `<em style="color: #dc2626;">No session ID provided and no active session found</em>`;
+              return;
+            }
+          }
+
+          // Call demo proxy endpoint (secret stays server-side)
+          // In production, only internal services call /internal/sessions/:sid with secret
+          const response = await fetch(
+            `${API_BASE}/sessions/${sessionId}/demo-internal`,
+            {
+              method: "GET",
+              headers: {
+                "Content-Type": "application/json",
+              },
+            },
+          );
+
+          const data = await response.json();
+          displayResponse(response.status, data, !response.ok);
+
+          if (response.ok && data.session) {
+            let html = `<strong style="color: #7c3aed;">✅ Internal API Success!</strong><hr style="margin: 8px 0; border: none; border-top: 1px solid #ddd;">`;
+            html += `<div style="margin: 8px 0;">`;
+            html += `<strong>Source:</strong> ${data.source}<br>`;
+            html += `<strong>Session ID:</strong> <code style="font-size: 11px;">${sessionId}</code><br>`;
+            html += `<strong>User ID:</strong> ${data.session.userId || "anonymous"}<br>`;
+            html += `<strong>State:</strong> ${data.session.state}<br>`;
+            html += `</div>`;
+
+            if (Object.keys(data.session.attributes).length > 0) {
+              html += `<div style="margin: 8px 0;"><strong>Attributes:</strong><br>`;
+              html += `<pre style="font-size: 11px; background: #f9fafb; padding: 6px; border-radius: 3px; margin-top: 4px;">${JSON.stringify(data.session.attributes, null, 2)}</pre></div>`;
+            }
+
+            html += `<div style="margin-top: 8px; padding: 8px; background: #faf5ff; border-radius: 3px; font-size: 12px;">`;
+            html += `🔌 Service B can now use this session data (userId, attributes, etc.)`;
+            html += `</div>`;
+
+            internalResult.innerHTML = html;
+          } else {
+            internalResult.innerHTML = `<em style="color: #dc2626;">${data.error || "Failed to fetch session"}</em>`;
+          }
+        } catch (error) {
+          displayResponse(0, { error: error.message }, true);
+          document.getElementById("internalResult").innerHTML =
+            `<em style="color: #dc2626;">Error: ${error.message}</em>`;
+        }
+      }
+    </script>
+  </body>
+</html>

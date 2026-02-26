@@ -1,0 +1,362 @@
+/* ===================================
+   Session Service API Tester Styles
+   =================================== */
+
+/* ============ Reset & Base ============ */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family:
+    -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue",
+    Arial, sans-serif;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  min-height: 100vh;
+  padding: 20px;
+}
+
+/* ============ Layout ============ */
+.container {
+  max-width: 1600px;
+  margin: 0 auto;
+}
+
+/* Main layout with cards on left, response on right */
+.main-layout {
+  display: grid;
+  grid-template-columns: 1fr 450px;
+  gap: 30px;
+  align-items: start;
+}
+
+.cards-container {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 20px;
+}
+
+.sticky-response {
+  position: sticky;
+  top: 20px;
+  max-height: calc(100vh - 40px);
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: #667eea transparent;
+}
+
+.sticky-response::-webkit-scrollbar {
+  width: 6px;
+}
+
+.sticky-response::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.sticky-response::-webkit-scrollbar-thumb {
+  background: rgba(102, 126, 234, 0.5);
+  border-radius: 3px;
+}
+
+.sticky-response::-webkit-scrollbar-thumb:hover {
+  background: rgba(102, 126, 234, 0.8);
+}
+
+@media (max-width: 1200px) {
+  .main-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .sticky-response {
+    position: static;
+    max-height: none;
+  }
+}
+
+@media (max-width: 768px) {
+  .cards-container {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ============ Typography ============ */
+h1 {
+  color: white;
+  text-align: center;
+  margin-bottom: 10px;
+  font-size: 2.5rem;
+}
+
+.subtitle {
+  color: rgba(255, 255, 255, 0.9);
+  text-align: center;
+  margin-bottom: 30px;
+  font-size: 1.1rem;
+}
+
+/* ============ Cards ============ */
+.card {
+  background: white;
+  border-radius: 12px;
+  padding: 24px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+  transition:
+    transform 0.2s,
+    box-shadow 0.2s;
+}
+
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.25);
+}
+
+.card h2 {
+  color: #333;
+  margin-bottom: 12px;
+  font-size: 1.5rem;
+}
+
+.card p {
+  color: #666;
+  margin-bottom: 16px;
+  line-height: 1.5;
+}
+
+/* ============ Endpoint Badges ============ */
+.endpoint {
+  display: inline-block;
+  background: #f0f0f0;
+  padding: 4px 12px;
+  border-radius: 6px;
+  font-family: "Courier New", monospace;
+  font-size: 0.9rem;
+  margin-bottom: 12px;
+}
+
+.endpoint.post {
+  background: #fff3cd;
+  color: #856404;
+}
+
+.endpoint.get {
+  background: #d1ecf1;
+  color: #0c5460;
+}
+
+/* ============ Buttons ============ */
+button {
+  background: #667eea;
+  color: white;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all 0.3s;
+  width: 100%;
+  font-weight: 600;
+}
+
+button:hover {
+  background: #5568d3;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+}
+
+button:active {
+  transform: translateY(0);
+}
+
+button:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* ============ Response Display ============ */
+.response-container {
+  background: white;
+  border-radius: 12px;
+  padding: 24px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+}
+
+.response-container h2 {
+  color: #333;
+  margin-bottom: 16px;
+  font-size: 1.3rem;
+}
+
+.response {
+  background: #1e1e1e;
+  color: #d4d4d4;
+  border-radius: 8px;
+  padding: 16px;
+  font-family: "Courier New", monospace;
+  font-size: 0.85rem;
+  overflow-x: auto;
+  max-height: 500px;
+  overflow-y: auto;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  line-height: 1.5;
+}
+
+/* Custom scrollbar for response */
+.response::-webkit-scrollbar {
+  width: 8px;
+}
+
+.response::-webkit-scrollbar-track {
+  background: #2a2a2a;
+  border-radius: 4px;
+}
+
+.response::-webkit-scrollbar-thumb {
+  background: #555;
+  border-radius: 4px;
+}
+
+.response::-webkit-scrollbar-thumb:hover {
+  background: #777;
+}
+
+.response.success {
+  border-left: 4px solid #28a745;
+}
+
+.response.error {
+  border-left: 4px solid #dc3545;
+}
+
+/* ============ Status Badges ============ */
+#statusBadge {
+  margin-bottom: 12px;
+}
+
+.status-badge {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+.status-badge.success {
+  background: #d4edda;
+  color: #155724;
+}
+
+.status-badge.error {
+  background: #f8d7da;
+  color: #721c24;
+}
+
+/* ============ Session Info ============ */
+.session-info {
+  background: white;
+  border: 2px solid #2196f3;
+  padding: 16px;
+  border-radius: 8px;
+  margin-top: 16px;
+  font-size: 0.9rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.session-info strong {
+  color: #1976d2;
+  display: block;
+  margin-bottom: 8px;
+}
+
+.session-info span {
+  color: #333;
+  font-family: "Courier New", monospace;
+  font-size: 0.85rem;
+  word-break: break-all;
+}
+
+/* ============ Timer Container ============ */
+.timer-container {
+  background: white;
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  margin-top: 16px;
+  text-align: center;
+}
+
+.timer-container h2 {
+  color: #333;
+  margin-bottom: 12px;
+  font-size: 1.2rem;
+}
+
+.timer-container p {
+  margin-bottom: 12px;
+  font-size: 0.85rem;
+}
+
+.timer-display {
+  font-size: 2.2rem;
+  font-weight: bold;
+  font-family: "Courier New", monospace;
+  margin: 16px 0;
+  padding: 16px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.timer-display.warning {
+  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+  animation: pulse 1s infinite;
+}
+
+.timer-display.expired {
+  background: #dc3545;
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.02);
+  }
+}
+
+.timer-status {
+  font-size: 1.1rem;
+  margin-top: 12px;
+  color: #666;
+}
+
+.timer-status.active {
+  color: #28a745;
+}
+
+.timer-status.warning {
+  color: #ffc107;
+}
+
+.timer-status.expired {
+  color: #dc3545;
+}
+
+/* ============ Utility Classes ============ */
+.timestamp {
+  color: #999;
+  font-size: 0.85rem;
+  margin-top: 8px;
+}
+
+.loading {
+  opacity: 0.6;
+  pointer-events: none;
+}
